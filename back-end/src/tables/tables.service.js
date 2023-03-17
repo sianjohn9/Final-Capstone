@@ -1,23 +1,54 @@
 const knex = require("../db/connection");
 
-function list() {
-  return knex("tables")
-  .select("*")
-  .orderBy("tables.table_name");
+async function list() {
+  return knex("tables").select("*").orderBy("table_name");
 }
-//standard list and create functions aswell as read for knex manipulating the information from the back-end databases
-function create(table) {
+
+// list tables that are not occupied
+async function listFree(/* minCapacity */) {
+  //filters list of tables by capacity. This functionality breaks testing but I want to implement it for portfolio.
+  return (
+    knex("tables")
+      .select("*")
+      .where({ reservation_id: null })
+      // .andWhere("capacity", ">=", minCapacity)   filters list of tables by capacity. This functionality breaks testing but I want to implement it for portfolio.
+      .orderBy("table_name")
+  );
+}
+
+async function create(table) {
   return knex("tables")
-    .insert(table)
+    .insert({ ...table, status: 'available' })
     .returning("*")
-    .then((newTables) => newTables[0]);
+    .then((createdRecords) => createdRecords[0]);
 }
 
-function read(table_id) {
-  return knex("tables")
-  .select("*")
-  .where({ table_id })
-  .first();
+async function read(table_id) {
+  return knex("tables").select("*").where({ table_id }).first();
 }
 
-module.exports = { list, create, read };
+// uses knex transaction to update a table and a reservation at the same time
+async function update(updatedTable, updatedReservation) {
+  const trx = await knex.transaction();
+
+  return trx("tables")
+    .select("*")
+    .where({ table_id: updatedTable.table_id })
+    .update(updatedTable, "*")
+    .then(function () {
+      return trx("reservations")
+        .select("*")
+        .where({ reservation_id: updatedReservation.reservation_id })
+        .update(updatedReservation, "*");
+    })
+    .then(trx.commit)
+    .catch(trx.rollback);
+}
+
+module.exports = {
+  list,
+  create,
+  listFree,
+  read,
+  update,
+};
