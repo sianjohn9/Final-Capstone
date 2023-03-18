@@ -1,52 +1,15 @@
 const knex = require("../db/connection");
 
-function list() {
+async function list(date) {
   return knex("reservations")
     .select("*")
-    .whereNotIn("status", ["finished", "cancelled"])
-    .orderBy("reservation_date");
-}
-
-function create(reservation) {
-  return knex("reservations as r")
-    .insert(reservation)
-    .returning("*")
-    .then((newReservation) => newReservation[0]);
-}
-
-function listByDay(date) {
-  return knex("reservations")
-    .select("*")
-    .where({ reservation_date: date })
-    .whereNot("status", "finished")
+    .where({ status: "booked", reservation_date: date })
+    .orWhere({ status: "seated", reservation_date: date })
     .orderBy("reservation_time");
 }
 
-function read(reservation_id) {
-  return knex("reservations")
-  .select("*")
-  .where({ reservation_id })
-  .first();
-}
-
-//selects all from reservations table updates the status column where the reservation_id matches then sets it as the first item in the table column/row
-function update(reservation_id, status) {
-  return knex("reservations")
-    .select("*")
-    .where({ reservation_id })
-    .update({ status })
-    .returning("*")
-    .then((updated) => updated[0]);
-}
-
-function finish(reservation_id) {
-  return knex("reservations")
-    .select("*")
-    .where({ reservation_id })
-    .update({ status: "finished" });
-}
-
-function search(mobile_number) {
+// list of reservations that match search criteria (phone number)
+async function searchList(mobile_number) {
   return knex("reservations")
     .whereRaw(
       "translate(mobile_number, '() -', '') like ?",
@@ -55,26 +18,36 @@ function search(mobile_number) {
     .orderBy("reservation_date");
 }
 
-
-function modify(reservation_id, reservation) {
+function create(reservation) {
   return knex("reservations")
-    .select("*")
-    .where({ reservation_id })
-    .update(reservation, "*")
+    .insert(reservation)
     .returning("*")
-    .then((updated) => updated[0]);
+    .then((createdRecords) => createdRecords[0]);
 }
 
-/*Exports allows for the functionality in our service file to be called in our controller file to access the data
-in the backend with express guiding where Knex to select, manipulate tables */
+function read(reservation_id) {
+  return knex("reservations").select("*").where({ reservation_id }).first();
+}
+
+function updateStatus(updatedReservation) {
+  return knex("reservations")
+    .select("*")
+    .where({ reservation_id: updatedReservation.reservation_id })
+    .update(updatedReservation, "*");
+}
+
+function update(updatedReservation) {
+  return knex("reservations")
+    .select("*")
+    .where({ reservation_id: updatedReservation.reservation_id })
+    .update(updatedReservation, "*");
+}
 
 module.exports = {
   list,
+  searchList,
   create,
-  listByDay,
   read,
-  finish,
+  updateStatus,
   update,
-  search,
-  modify,
 };
