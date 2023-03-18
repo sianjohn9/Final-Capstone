@@ -1,24 +1,54 @@
-const path = require("path");
+const knex = require("../db/connection");
 
-require("dotenv").config({ path: path.join(__dirname, "..", ".env") });
+async function list() {
+  return knex("tables").select("*").orderBy("table_name");
+}
 
-const express = require("express");
-const cors = require("cors");
+// list tables that are not occupied
+async function listFree(/* minCapacity */) {
+  //filters list of tables by capacity. This functionality breaks testing but I want to implement it for portfolio.
+  return (
+    knex("tables")
+      .select("*")
+      .where({ reservation_id: null })
+      // .andWhere("capacity", ">=", minCapacity)   filters list of tables by capacity. This functionality breaks testing but I want to implement it for portfolio.
+      .orderBy("table_name")
+  );
+}
 
-const errorHandler = require("./errors/errorHandler");
-const notFound = require("./errors/notFound");
-const reservationsRouter = require("./reservations/reservations.router");
-const tablesRouter = require("./tables/tables.router");
+async function create(table) {
+  return knex("tables")
+    .insert({ ...table, status: 'available' })
+    .returning("*")
+    .then((createdRecords) => createdRecords[0]);
+}
 
-const app = express();
-console.log('hi mom');
-app.use(cors());
-//app.use(cors({origin: 'https://restaurant-reservation-client-sooty.vercel.app/dashboard'}));
-app.use(express.json());
-app.use("/reservations", reservationsRouter);
-app.use("/tables", tablesRouter);
+async function read(table_id) {
+  return knex("tables").select("*").where({ table_id }).first();
+}
 
-app.use(notFound);
-app.use(errorHandler);
+// uses knex transaction to update a table and a reservation at the same time
+async function update(updatedTable, updatedReservation) {
+  const trx = await knex.transaction();
 
-module.exports = app;
+  return trx("tables")
+    .select("*")
+    .where({ table_id: updatedTable.table_id })
+    .update(updatedTable, "*")
+    .then(function () {
+      return trx("reservations")
+        .select("*")
+        .where({ reservation_id: updatedReservation.reservation_id })
+        .update(updatedReservation, "*");
+    })
+    .then(trx.commit)
+    .catch(trx.rollback);
+}
+
+module.exports = {
+  list,
+  create,
+  listFree,
+  read,
+  update,
+};
