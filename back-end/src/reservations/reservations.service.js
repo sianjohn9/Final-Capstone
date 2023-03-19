@@ -1,15 +1,45 @@
+
+
 const knex = require("../db/connection");
 
-async function list(date) {
+function list(date) {
+  
   return knex("reservations")
-    .select("*")
-    .where({ status: "booked", reservation_date: date })
-    .orWhere({ status: "seated", reservation_date: date })
+    .where("reservation_date", date)
+    .whereNotIn("status", ["finished", "cancelled"]) 
     .orderBy("reservation_time");
 }
 
-// list of reservations that match search criteria (phone number)
-async function searchList(mobile_number) {
+function read(reservation_id) {
+  return knex("reservations").select("*").where({ reservation_id }).first();
+}
+
+function create(newReservation) {
+  return knex("reservations")
+    .insert(newReservation, "*")
+    .then((createdRecords) => createdRecords[0]);
+}
+
+function update(updatedReservation) {
+  return knex("reservations")
+    .where({ reservation_id: updatedReservation.reservation_id })
+   .whereNot({ status: "finished" })
+    .update(updatedReservation, "*")
+    .then((updatedRecord) => updatedRecord[0]);
+}
+
+function cancelReservationStatus(reservation_id) {
+  return knex("reservations")
+  .where({reservation_id: reservation_id })
+  .whereNot({ status: "finished" })
+  .update({status: "cancelled"})
+  .returning("*")
+}
+
+
+//function given in project readme
+// remove any non-numeric characters from the submitted mobile number and also use the PostgreSQL translate function.
+function search(mobile_number) {
   return knex("reservations")
     .whereRaw(
       "translate(mobile_number, '() -', '') like ?",
@@ -18,36 +48,16 @@ async function searchList(mobile_number) {
     .orderBy("reservation_date");
 }
 
-function create(reservation) {
-  return knex("reservations")
-    .insert(reservation)
-    .returning("*")
-    .then((createdRecords) => createdRecords[0]);
-}
-
-function read(reservation_id) {
-  return knex("reservations").select("*").where({ reservation_id }).first();
-}
-
-function updateStatus(updatedReservation) {
-  return knex("reservations")
-    .select("*")
-    .where({ reservation_id: updatedReservation.reservation_id })
-    .update(updatedReservation, "*");
-}
-
-function update(updatedReservation) {
-  return knex("reservations")
-    .select("*")
-    .where({ reservation_id: updatedReservation.reservation_id })
-    .update(updatedReservation, "*");
+function destroy(reservation_Id) {
+  return knex("reservations").where({ reservation_Id }).del();
 }
 
 module.exports = {
   list,
-  searchList,
-  create,
   read,
-  updateStatus,
+  create,
   update,
+  cancelReservationStatus,
+  search,
+  delete: destroy,
 };
