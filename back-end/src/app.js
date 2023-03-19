@@ -11,10 +11,10 @@ const reservationsRouter = require("./reservations/reservations.router");
 const tablesRouter = require("./tables/tables.router");
 
 const app = express();
-console.log('hi mom');
+
 app.use(cors());
-//app.use(cors({origin: 'https://restaurant-reservation-client-sooty.vercel.app/dashboard'}));
 app.use(express.json());
+
 app.use("/reservations", reservationsRouter);
 app.use("/tables", tablesRouter);
 
