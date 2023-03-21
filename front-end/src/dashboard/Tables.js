@@ -1,5 +1,5 @@
 import React from "react";
-import {finishTable} from "../utils/api";
+import { finishedTable } from "../utils/api";
 
 //tables prop is coming from the dashboard component
 function Tables({ table, loadDashboard }) {
