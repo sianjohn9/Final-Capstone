@@ -41,7 +41,8 @@ function Search() {
       <h1>This is the Search page</h1>
       <form onSubmit={loadSearch}>
         <div>
-          <input
+        <input  
+           type="number"
             placeholder="Search by Phone number"
             onChange={changeHandler}
             value={phoneNumber.mobile_number}
