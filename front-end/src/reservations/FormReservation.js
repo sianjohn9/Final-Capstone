@@ -56,9 +56,9 @@ function FormReservation({reservation, setReservation, submitHandler}) {
         <div className="col-sm-10">
           <input
             name="mobile_number"
-            type="tel"
-      //       pattern="\d{3}[\-]\d{3}[\-]\d{4}"
-      // placeholder="xxx-xxx-xxxx"
+            type="number"
+            pattern="([0-9]{3}-)?[0-9]{3}-[0-9]{4}"
+            placeholder="xxx-xxx-xxxx"
             value={reservation.mobile_number}
             onChange={changeHandler}
           />
