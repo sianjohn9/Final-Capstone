@@ -54,7 +54,7 @@ function FormReservation({reservation, setReservation, submitHandler}) {
       <div className="form-group row">
         <label className="col-sm-2 col-form-label">Mobile Number:</label>
         <div className="col-sm-10">
-          <input
+        <input
             name="mobile_number"
             type="tel"
             pattern="([0-9]{3}-)?[0-9]{3}-[0-9]{4}"
